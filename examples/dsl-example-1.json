@@ -1,5 +1,64 @@
 {
-    "catalogs": {},
-    "schemas": {},
-    "tables": {}
+    "admin_groups": ["admins"],
+    "public_catalogs": false,
+    "public_schemas": false,
+    "public_tables": false,
+    "catalogs": [
+        {
+            "catalog": "osc_datacommons_dev",
+            "allow_groups": ["aicoe_osc_demo", "itr.*"],
+            "public_tables": true
+        }
+    ],
+    "schemas": [
+        {
+            "catalog": "osc_datacommons_dev",
+            "schema": "gleif",
+            "owner_groups": ["entity_matching.*"],
+            "public_tables": false
+        }
+    ],
+    "tables": [
+        {
+            "catalog": "osc_datacommons_dev",
+            "schema": "demo",
+            "table": "demo_dv_userfacing",
+            "owner_groups": ["demo_dv_dev"],
+            "public": false,
+            "column_acl": [
+                {
+                    "groups": ["demo_dv_quant"],
+                    "hide_columns": ["dev1"]
+                },
+                {
+                    "groups": ["demo_dv_user"],
+                    "hide_columns": ["quant1"]
+                }
+            ]
+        },
+        {
+            "catalog": "osc_datacommons_dev",
+            "schema": "demo",
+            "table": "demo_dv_backend",
+            "owner_groups": ["demo_dv_dev"],
+            "public": false
+        },
+        {
+            "catalog": "osc_datacommons_dev",
+            "schema": "demo",
+            "table": "demo_dv_public",
+            "owner_groups": ["demo_dv_dev"],
+            "public": true,
+            "column_acl": [
+                {
+                    "groups": ["demo_dv_quant"],
+                    "hide_columns": ["dev1"]
+                },
+                {
+                    "hide_columns": ["quant1"]
+                }
+            ],
+            "row_acl": "access"
+        }
+    ]
 }
