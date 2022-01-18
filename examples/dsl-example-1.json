@@ -3,60 +3,87 @@
     "public_tables": true,
     "catalogs": [
         {
-            "catalog": "osc_datacommons_dev",
-            "admin_groups": ["aicoe_osc_demo", "itr.*"],
+            "catalog": "dev",
+            "admin_groups": [".*"],
+            "public_tables": true
+        },
+        {
+            "catalog": "prod",
+            "admin_groups": ["workflow_a_dev", "workflow_b_dev"],
             "public_tables": true
         }
     ],
     "schemas": [
         {
-            "catalog": "osc_datacommons_dev",
-            "schema": "gleif",
-            "admin_groups": ["entity_matching.*"],
+            "catalog": "dev",
+            "schema": "sandbox",
+            "admin_groups": [".*"],
+            "public_tables": true
+        },
+        {
+            "catalog": "prod",
+            "schema": "workflow_a",
+            "admin_groups": ["workflow_a_dev"],
             "public_tables": false
+        },
+        {
+            "catalog": "prod",
+            "schema": "workflow_b",
+            "admin_groups": ["workflow_b_dev"],
+            "public_tables": true
         }
     ],
     "tables": [
         {
-            "catalog": "osc_datacommons_dev",
-            "schema": "demo",
-            "table": "demo_dv_userfacing",
-            "admin_groups": ["demo_dv_dev"],
+            "catalog": "dev",
+            "schema": "sandbox",
+            "table": ".*",
+            "admin_groups": [".*"],
+            "public": true
+        },
+        {
+            "catalog": "prod",
+            "schema": "workflow_a",
+            "table": "userfacing",
+            "admin_groups": ["workflow_a_dev"],
             "public": false,
             "column_acl": [
                 {
-                    "groups": ["demo_dv_quant"],
-                    "hide_columns": ["dev1"]
+                    "groups": ["workflow_a_quant"],
+                    "hide_columns": ["dev_a"]
                 },
                 {
-                    "groups": ["demo_dv_user"],
-                    "hide_columns": ["quant1"]
+                    "groups": ["workflow_a_user"],
+                    "hide_columns": ["quant_a"]
                 }
             ]
         },
         {
-            "catalog": "osc_datacommons_dev",
-            "schema": "demo",
-            "table": "demo_dv_backend",
-            "admin_groups": ["demo_dv_dev"],
+            "catalog": "prod",
+            "schema": "workflow_a",
+            "table": "backend",
+            "admin_groups": ["workflow_a_dev"],
             "public": false
         },
         {
-            "catalog": "osc_datacommons_dev",
-            "schema": "demo",
-            "table": "demo_dv_public",
-            "admin_groups": ["demo_dv_dev"],
+            "catalog": "prod",
+            "schema": "workflow_b",
+            "table": "frontend",
+            "admin_groups": ["workflow_b_dev"],
             "public": true,
             "column_acl": [
                 {
-                    "groups": ["demo_dv_quant"],
-                    "hide_columns": ["dev1"]
+                    "groups": ["workflow_b_quant"],
+                    "hide_columns": ["access", "dev_b"]
                 },
                 {
-                    "hide_columns": ["quant1"]
+                    "hide_columns": ["quant_b"]
                 }
             ],
-            "row_acl": "access"
+            "row_acl": {
+                "type": "filter",
+                "filter": "contains(current_groups(), access) or access = 'public'"
+            }
         }
     ]
 }
