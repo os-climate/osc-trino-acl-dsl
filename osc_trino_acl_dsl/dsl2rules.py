@@ -26,6 +26,22 @@ def dsl_to_rules(dsl: dict) -> dict:
         })
 
     # table rules go here
+    for spec in dsl['tables']:
+        # table admin group rules go first to override others
+        table_rules.append({
+            "group": "|".join(spec['admin_groups']),
+            "catalog": spec['catalog'],
+            "schema": spec['schema'],
+            "table": spec['table'],
+            "privileges": _table_admin_privs
+            })
+        # table default policy goes last
+        table_rules.append({
+            "catalog": spec['catalog'],
+            "schema": spec['schema'],
+            "table": spec['table'],
+            "privileges": _table_public_privs if spec['public'] else []
+            })
 
     # next are schema rules
     for spec in dsl['schemas']:
