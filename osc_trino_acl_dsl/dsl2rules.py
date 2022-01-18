@@ -31,7 +31,7 @@ def dsl_to_rules(dsl: dict) -> dict:
     for spec in dsl['schemas']:
         # configure group(s) with ownership of this schema
         schema_rules.append({
-            "group": "|".join(spec['owner_groups']),
+            "group": "|".join(spec['admin_groups']),
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "owner": True
@@ -47,7 +47,7 @@ def dsl_to_rules(dsl: dict) -> dict:
     for spec in dsl['catalogs']:
         # configure group(s) with read+write access to this catalog
         catalog_rules.append({
-            "group": "|".join(spec['allow_groups']),
+            "group": "|".join(spec['admin_groups']),
             "catalog": spec['catalog'],
             "allow": "all"
             })

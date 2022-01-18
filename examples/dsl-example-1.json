@@ -4,7 +4,7 @@
     "catalogs": [
         {
             "catalog": "osc_datacommons_dev",
-            "allow_groups": ["aicoe_osc_demo", "itr.*"],
+            "admin_groups": ["aicoe_osc_demo", "itr.*"],
             "public_tables": true
         }
     ],
@@ -12,7 +12,7 @@
         {
             "catalog": "osc_datacommons_dev",
             "schema": "gleif",
-            "owner_groups": ["entity_matching.*"],
+            "admin_groups": ["entity_matching.*"],
             "public_tables": false
         }
     ],
@@ -21,7 +21,7 @@
             "catalog": "osc_datacommons_dev",
             "schema": "demo",
             "table": "demo_dv_userfacing",
-            "owner_groups": ["demo_dv_dev"],
+            "admin_groups": ["demo_dv_dev"],
             "public": false,
             "column_acl": [
                 {
@@ -38,14 +38,14 @@
             "catalog": "osc_datacommons_dev",
             "schema": "demo",
             "table": "demo_dv_backend",
-            "owner_groups": ["demo_dv_dev"],
+            "admin_groups": ["demo_dv_dev"],
             "public": false
         },
         {
             "catalog": "osc_datacommons_dev",
             "schema": "demo",
             "table": "demo_dv_public",
-            "owner_groups": ["demo_dv_dev"],
+            "admin_groups": ["demo_dv_dev"],
             "public": true,
             "column_acl": [
                 {
