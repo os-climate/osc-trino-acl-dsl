@@ -1,8 +1,6 @@
 {
     "admin_groups": ["admins"],
-    "public_catalogs": false,
-    "public_schemas": false,
-    "public_tables": false,
+    "public_tables": true,
     "catalogs": [
         {
             "catalog": "osc_datacommons_dev",

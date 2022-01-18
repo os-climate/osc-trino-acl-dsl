@@ -30,18 +30,34 @@ def dsl_to_rules(dsl: dict) -> dict:
     # next are schema rules
 
     # next are catalog rules
+    for catspec in dsl['catalogs']:
+        catalog_rules.append({
+            "group": "|".join(catspec['allow_groups']),
+            "catalog": catspec['catalog'],
+            "allow": "all"
+            })
+        # catalog rules for tables section are lower priority than schema rules above
+        table_rules.append({
+            "catalog": catspec['catalog'],
+            "privileges": _table_public_privs if catspec['public_tables'] else []
+            })
 
     # global default rules go last
-    catalog_rules.append({
-        "allow": "all" if dsl['public_catalogs'] else "none"
-        })
-    schema_rules.append({
-        "owner": True if dsl['public_schemas'] else False
-        })
     table_rules.append({
+        # default table privs can be 'read-only' (i.e. select) or 'no privileges'
         "privileges": _table_public_privs if dsl['public_tables'] else []
         })
+    schema_rules.append({
+        # defaulting all schemas to owner is not safe
+        # schemas should be assigned ownership on an explicit basis
+        "owner": False
+        })
+    catalog_rules.append({
+        # allows basic 'show schemas' and 'show tables' operations for everyone
+        "allow": "read-only" 
+        })
 
+    # assemble the final json structure and return it
     rules = {
         "catalogs": catalog_rules,
         "schemas": schema_rules,
