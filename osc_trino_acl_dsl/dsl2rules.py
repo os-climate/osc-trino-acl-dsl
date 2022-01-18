@@ -45,6 +45,7 @@ def dsl_to_rules(dsl: dict) -> dict:
                 rafilter = rowspec['filter']
             else:
                 raise ValueError(f"unrecognized row_acl type {rstype}")
+        # construct column access rules if any are configured
         hcols = []
         if "column_acl" in spec:
             for hspec in spec['column_acl']:
