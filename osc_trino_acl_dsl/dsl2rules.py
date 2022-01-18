@@ -67,7 +67,6 @@ def dsl_to_rules(dsl: dict) -> dict:
 
 def main():
     dsl_json_fname = sys.argv[1]
-    rules_json_fname = sys.argv[2]
 
     with open(dsl_json_fname, 'r') as dsl_file:
         # future work: support both json and yaml, probably use pyyaml lib
@@ -79,7 +78,7 @@ def main():
 
     rules = dsl_to_rules(dsl)
 
-    with open(rules_json_fname, 'w') as rules_file:
+    with sys.stdout as rules_file:
         json.dump(rules, rules_file, indent=4)
         rules_file.write('\n')
 
