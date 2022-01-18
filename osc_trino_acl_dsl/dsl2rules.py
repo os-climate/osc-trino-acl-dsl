@@ -27,6 +27,7 @@ def dsl_to_rules(dsl: dict) -> dict:
 
     # table rules go here
     for spec in dsl['tables']:
+        public = spec['public']
         # table admin group rules go first to override others
         table_rules.append({
             "group": "|".join(spec['admin_groups']),
@@ -35,13 +36,42 @@ def dsl_to_rules(dsl: dict) -> dict:
             "table": spec['table'],
             "privileges": _table_admin_privs
             })
+        # detect row-level access if it was configured
+        rafilter = None
+        if "row_acl" in spec:
+            rowspec = spec['row_acl']
+            rstype = rowspec['type']
+            if rstype == "filter":
+                rafilter = rowspec['filter']
+            else:
+                raise ValueError(f"unrecognized row_acl type {rstype}")
+        hcols = []
+        if "column_acl" in spec:
+            for hspec in spec['column_acl']:
+                hcols.extend(hspec['hide_columns'])
+                if "groups" in hspec:
+                    rule = {
+                        "group": "|".join(hspec['groups']),
+                        "catalog": spec['catalog'],
+                        "schema": spec['schema'],
+                        "table": spec['table'],
+                        "privileges": _table_public_privs
+                    }
+                    if rafilter: rule["filter"] = rafilter
+                    if len(hcols) > 0:
+                        rule["columns"] = [{"name": col, "allow": False} for col in hcols]
+                    table_rules.append(rule)
         # table default policy goes last
-        table_rules.append({
+        rule = {
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "table": spec['table'],
             "privileges": _table_public_privs if spec['public'] else []
-            })
+        }
+        if rafilter and public: rule["filter"] = rafilter
+        if (len(hcols) > 0) and public:
+            rule["columns"] = [{"name": col, "allow": False} for col in hcols]
+        table_rules.append(rule)
 
     # next are schema rules
     for spec in dsl['schemas']:
