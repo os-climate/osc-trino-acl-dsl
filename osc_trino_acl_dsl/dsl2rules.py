@@ -28,18 +28,33 @@ def dsl_to_rules(dsl: dict) -> dict:
     # table rules go here
 
     # next are schema rules
+    for spec in dsl['schemas']:
+        # configure group(s) with ownership of this schema
+        schema_rules.append({
+            "group": "|".join(spec['owner_groups']),
+            "catalog": spec['catalog'],
+            "schema": spec['schema'],
+            "owner": True
+            })
+        # schema rules for tables section are lower priority than table-specific above
+        table_rules.append({
+            "catalog": spec['catalog'],
+            "schema": spec['schema'],
+            "privileges": _table_public_privs if spec['public_tables'] else []
+            })
 
     # next are catalog rules
-    for catspec in dsl['catalogs']:
+    for spec in dsl['catalogs']:
+        # configure group(s) with read+write access to this catalog
         catalog_rules.append({
-            "group": "|".join(catspec['allow_groups']),
-            "catalog": catspec['catalog'],
+            "group": "|".join(spec['allow_groups']),
+            "catalog": spec['catalog'],
             "allow": "all"
             })
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({
-            "catalog": catspec['catalog'],
-            "privileges": _table_public_privs if catspec['public_tables'] else []
+            "catalog": spec['catalog'],
+            "privileges": _table_public_privs if spec['public_tables'] else []
             })
 
     # global default rules go last
