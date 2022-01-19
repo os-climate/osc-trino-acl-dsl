@@ -35,13 +35,6 @@
     ],
     "tables": [
         {
-            "catalog": "dev",
-            "schema": "sandbox",
-            "table": ".*",
-            "admin_groups": [".*"],
-            "public": true
-        },
-        {
             "catalog": "prod",
             "schema": "workflow_a",
             "table": "userfacing",

@@ -85,6 +85,14 @@ def dsl_to_rules(dsl: dict) -> dict:
             })
         # schema rules for tables section are lower priority than table-specific above
         table_rules.append({
+            # ensure that schema admins also have full table-level privs inside their schema
+            "group": "|".join(spec['admin_groups']),
+            "catalog": spec['catalog'],
+            "schema": spec['schema'],
+            "privileges": _table_admin_privs
+            })
+        table_rules.append({
+            # set the default public privs inside this schema
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "privileges": _table_public_privs if spec['public_tables'] else []
