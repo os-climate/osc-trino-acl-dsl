@@ -69,26 +69,6 @@ Will produce this output:
             ]
         },
         {
-            "group": ".*",
-            "catalog": "dev",
-            "schema": "sandbox",
-            "table": ".*",
-            "privileges": [
-                "SELECT",
-                "INSERT",
-                "DELETE",
-                "OWNERSHIP"
-            ]
-        },
-        {
-            "catalog": "dev",
-            "schema": "sandbox",
-            "table": ".*",
-            "privileges": [
-                "SELECT"
-            ]
-        },
-        {
             "group": "workflow_a_dev",
             "catalog": "prod",
             "schema": "workflow_a",
@@ -214,6 +194,17 @@ Will produce this output:
             ]
         },
         {
+            "group": ".*",
+            "catalog": "dev",
+            "schema": "sandbox",
+            "privileges": [
+                "SELECT",
+                "INSERT",
+                "DELETE",
+                "OWNERSHIP"
+            ]
+        },
+        {
             "catalog": "dev",
             "schema": "sandbox",
             "privileges": [
@@ -221,9 +212,31 @@ Will produce this output:
             ]
         },
         {
+            "group": "workflow_a_dev",
+            "catalog": "prod",
+            "schema": "workflow_a",
+            "privileges": [
+                "SELECT",
+                "INSERT",
+                "DELETE",
+                "OWNERSHIP"
+            ]
+        },
+        {
             "catalog": "prod",
             "schema": "workflow_a",
             "privileges": []
+        },
+        {
+            "group": "workflow_b_dev",
+            "catalog": "prod",
+            "schema": "workflow_b",
+            "privileges": [
+                "SELECT",
+                "INSERT",
+                "DELETE",
+                "OWNERSHIP"
+            ]
         },
         {
             "catalog": "prod",
