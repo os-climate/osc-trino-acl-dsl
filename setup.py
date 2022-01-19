@@ -26,8 +26,9 @@ setup(
     ],
     packages = find_packages(),
     include_package_data = True,
-    package_data={
-        "osc_trino_acl_dsl": ["jsonschema/*.json"]
+    package_data = {
+        # also requires corresponding entry in MANIFEST.in to work with dist
+        "osc_trino_acl_dsl": ["jsonschema/*.json"],
     },
     install_requires = [],
     entry_points = {

@@ -1,2 +1,3 @@
+# see corresponding package_data entry in setup.py
 include osc_trino_acl_dsl/jsonschema/*.json
 
