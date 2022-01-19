@@ -29,8 +29,7 @@ setup(
     install_requires = [],
     entry_points = {
         "console_scripts": [
-            "trino-dsl-to-rules=osc_trino_acl_dsl.__main__:main",
+            "trino-dsl-to-rules=osc_trino_acl_dsl.dsl2rules:main",
         ],
     },
 )
-
