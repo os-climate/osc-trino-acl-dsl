@@ -1,0 +1,2 @@
+include osc_trino_acl_dsl/jsonschema/*.json
+
