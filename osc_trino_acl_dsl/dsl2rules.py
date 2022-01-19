@@ -6,7 +6,16 @@ _table_admin_privs = ['SELECT', 'INSERT', 'DELETE', 'OWNERSHIP']
 _table_public_privs = ['SELECT']
 
 def dsl_to_rules(dsl: dict) -> dict:
-    """Transform DSL json structure to trino "rules.json" structure"""
+    """
+    Transform DSL json structure to trino 'rules.json' structure
+
+    Currently the expected format of 'dsl' parameter is only defined via the
+    example dsl files in the examples directory, for example here:
+    https://github.com/os-climate/osc-trino-acl-dsl/blob/main/examples/dsl-example-1.json
+
+    This function returns a 'dict' structure that can be written using 'json.dump' to produce
+    a 'rules.json' file ingestable by trino.
+    """
     catalog_rules = []
     schema_rules = []
     table_rules = []
