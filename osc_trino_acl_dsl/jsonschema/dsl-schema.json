@@ -6,11 +6,107 @@
     "title": "Trino ACL DSL",
 
     "description": "A DSL for generating rules.json files for Trino",
-
-    "definitions": {
-    },
-
     "type": "object",
     "properties": {
+        "admin_groups": { "$ref": "#/definitions/group_array" },
+        "public_tables": { "type": "boolean" },
+        "catalogs": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/catalog_entry" }
+        },
+        "schemas": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/schema_entry" }
+        },
+        "tables": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/table_entry" }
+        }
+    },
+    "required": ["admin_groups", "public_tables", "catalogs", "schemas", "tables"],
+
+    "definitions": {
+        "catalog_entry": {
+            "description": "an entry decribing the policy for a catalog",
+            "type": "object",
+            "properties": {
+                "catalog": { "$ref": "#/definitions/trino_id" },
+                "admin_groups": { "$ref": "#/definitions/group_array" },
+                "public_tables": { "type": "boolean" }
+            },
+            "required": ["catalog", "admin_groups", "public_tables"]
+        },
+        "schema_entry": {
+            "description": "an entry decribing the policy for a database schema",
+            "type": "object",
+            "properties": {
+                "catalog": { "$ref": "#/definitions/trino_id" },
+                "schema": { "$ref": "#/definitions/trino_id" },
+                "admin_groups": { "$ref": "#/definitions/group_array" },
+                "public_tables": { "type": "boolean" }
+            },
+            "required": ["catalog", "schema", "admin_groups", "public_tables"]
+        },
+        "table_entry": {
+            "description": "an entry decribing the policy for a table",
+            "type": "object",
+            "properties": {
+                "catalog": { "$ref": "#/definitions/trino_id" },
+                "schema": { "$ref": "#/definitions/trino_id" },
+                "table": { "$ref": "#/definitions/trino_id" },
+                "admin_groups": { "$ref": "#/definitions/group_array" },
+                "public": { "type": "boolean" },
+                "column_acl": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/hide_column_entry" },
+                    "minItems": 1
+                },
+                "row_acl": { "anyOf": [
+                    { "$ref": "#/definitions/row_acl_filter" }
+                ]}
+            },
+            "required": ["catalog", "schema", "table", "admin_groups", "public_tables"]
+        },
+        "group_array": {
+            "description": "an array of group patterns",
+            "type": "array",
+            "items": { "$ref": "#/definitions/trino_id_regex" },
+            "minItems": 1
+        },
+        "hide_column_entry": {
+            "description": "an entry in the cumulative column-hiding array for column-level ACL",
+            "type": "object",
+            "properties": {
+                "groups": { "$ref": "#/definitions/group_array" },
+                "hide_columns": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/trino_id" },
+                    "minItems": 1
+                }
+            },
+            "required": ["hide_columns"]
+        },
+        "row_acl_filter": {
+            "description": "A row ACL spec that specifies a raw SQL filter clause",
+            "type": "object",
+            "properties": {
+                "type": { "const": "filter" },
+                "filter": { "$ref": "#/definitions/trino_sql_clause" }
+            },
+            "required": ["type", "filter"]
+        },
+        "trino_sql_clause": {
+            "description": "Contains a Trino SQL clause (e.g. the argument to WHERE <clause>). TODO: it would be nice to check this for correct syntax but I am dubious it is feasible",
+            "type": "string"
+        },
+        "trino_id": {
+            "description": "a valid trino identifier, e.g. catalog, schema, or table name",
+            "type": "string",
+            "pattern": "^[a-z][a-z_]*$"
+        },
+        "trino_id_regex": {
+            "description": "a trino id, or regex to match some id(s). TODO: define pattern",
+            "type": "string"
+        }
     }
 }
