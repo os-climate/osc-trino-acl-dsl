@@ -2,6 +2,17 @@ import json
 import os
 import sys
 
+def dsl_json_schema():
+    try:
+        import importlib.resources as pkg_resources
+    except ImportError:
+        # try 3.7 backport as a fallback
+        import importlib_resources as pkg_resources
+    from . import jsonschema
+    with pkg_resources.open_text(jsonschema, 'dsl-schema.json') as schemafile:
+        schema = json.load(schemafile)
+    return schema
+
 _table_admin_privs = ['SELECT', 'INSERT', 'DELETE', 'OWNERSHIP']
 _table_public_privs = ['SELECT']
 
