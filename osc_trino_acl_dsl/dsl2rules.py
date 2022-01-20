@@ -2,21 +2,43 @@ import json
 import os
 import sys
 
+_dsl_schema_cache = None
+_dsl_validator_cache = None
+
+_table_admin_privs = ['SELECT', 'INSERT', 'DELETE', 'OWNERSHIP']
+_table_public_privs = ['SELECT']
+
+
 def dsl_json_schema():
+    global _dsl_schema_cache
+    if _dsl_schema_cache is not None:
+        return _dsl_schema_cache
+
     try:
         import importlib.resources as pkg_resources
     except ImportError:
         # try 3.7 backport as a fallback
         import importlib_resources as pkg_resources
+
     from . import jsonschema
     with pkg_resources.open_text(jsonschema, 'dsl-schema.json') as schemafile:
-        schema = json.load(schemafile)
-    return schema
+        _dsl_schema_cache = json.load(schemafile)
+    return _dsl_schema_cache
 
-_table_admin_privs = ['SELECT', 'INSERT', 'DELETE', 'OWNERSHIP']
-_table_public_privs = ['SELECT']
 
-def dsl_to_rules(dsl: dict) -> dict:
+def dsl_json_validator():
+    global _dsl_validator_cache
+    if _dsl_validator_cache is not None:
+        return _dsl_validator_cache
+    import jsonschema
+    _dsl_validator_cache = jsonschema.Draft7Validator(dsl_json_schema())
+    # future work: if we ever desire to support default vales, use the following
+    # to extend validation with filling in defaults from the json-schema spec
+    # https://github.com/Julian/jsonschema/issues/4#issuecomment-4396738
+    return _dsl_validator_cache
+
+
+def dsl_to_rules(dsl: dict, validate = True) -> dict:
     """
     Transform DSL json structure to trino 'rules.json' structure
 
@@ -27,6 +49,10 @@ def dsl_to_rules(dsl: dict) -> dict:
     This function returns a 'dict' structure that can be written using 'json.dump' to produce
     a 'rules.json' file ingestable by trino.
     """
+    if validate:
+        # validate the dsl json structure against the DSL json-schema
+        dsl_json_validator().validate(dsl)
+
     catalog_rules = []
     schema_rules = []
     table_rules = []
@@ -162,11 +188,7 @@ def main():
         # future work: support both json and yaml, probably use pyyaml lib
         dsl = json.load(dsl_file)
 
-    # future work: add a json-schema spec for validation, and use the following
-    # to extend validation with filling in defaults from the json-schema spec
-    # https://github.com/Julian/jsonschema/issues/4#issuecomment-4396738
-
-    rules = dsl_to_rules(dsl)
+    rules = dsl_to_rules(dsl, validate = True)
 
     with sys.stdout as rules_file:
         json.dump(rules, rules_file, indent=4)
