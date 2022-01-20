@@ -1,36 +1,36 @@
 {
-    "admin_groups": ["admins"],
-    "public_tables": true,
+    "admin-groups": ["admins"],
+    "public-tables": true,
     "catalogs": [
         {
             "catalog": "dev",
-            "admin_groups": [".*"],
-            "public_tables": true
+            "admin-groups": [".*"],
+            "public-tables": true
         },
         {
             "catalog": "prod",
-            "admin_groups": ["workflow_a_dev", "workflow_b_dev"],
-            "public_tables": true
+            "admin-groups": ["workflow_a_dev", "workflow_b_dev"],
+            "public-tables": true
         }
     ],
     "schemas": [
         {
             "catalog": "dev",
             "schema": "sandbox",
-            "admin_groups": [".*"],
-            "public_tables": true
+            "admin-groups": [".*"],
+            "public-tables": true
         },
         {
             "catalog": "prod",
             "schema": "workflow_a",
-            "admin_groups": ["workflow_a_dev"],
-            "public_tables": false
+            "admin-groups": ["workflow_a_dev"],
+            "public-tables": false
         },
         {
             "catalog": "prod",
             "schema": "workflow_b",
-            "admin_groups": ["workflow_b_dev"],
-            "public_tables": true
+            "admin-groups": ["workflow_b_dev"],
+            "public-tables": true
         }
     ],
     "tables": [
@@ -38,16 +38,16 @@
             "catalog": "prod",
             "schema": "workflow_a",
             "table": "userfacing",
-            "admin_groups": ["workflow_a_dev"],
+            "admin-groups": ["workflow_a_dev"],
             "public": false,
-            "column_acl": [
+            "column-acl": [
                 {
                     "groups": ["workflow_a_quant"],
-                    "hide_columns": ["dev_a"]
+                    "hide-columns": ["dev_a"]
                 },
                 {
                     "groups": ["workflow_a_user"],
-                    "hide_columns": ["quant_a"]
+                    "hide-columns": ["quant_a"]
                 }
             ]
         },
@@ -55,25 +55,25 @@
             "catalog": "prod",
             "schema": "workflow_a",
             "table": "backend",
-            "admin_groups": ["workflow_a_dev"],
+            "admin-groups": ["workflow_a_dev"],
             "public": false
         },
         {
             "catalog": "prod",
             "schema": "workflow_b",
             "table": "frontend",
-            "admin_groups": ["workflow_b_dev"],
+            "admin-groups": ["workflow_b_dev"],
             "public": true,
-            "column_acl": [
+            "column-acl": [
                 {
                     "groups": ["workflow_b_quant"],
-                    "hide_columns": ["access", "dev_b"]
+                    "hide-columns": ["access", "dev_b"]
                 },
                 {
-                    "hide_columns": ["quant_b"]
+                    "hide-columns": ["quant_b"]
                 }
             ],
-            "row_acl": {
+            "row-acl": {
                 "type": "filter",
                 "filter": "contains(current_groups(), access) or access = 'public'"
             }

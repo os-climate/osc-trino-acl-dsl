@@ -62,15 +62,15 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
 
     # rules configuring admin acl go first to ensure they override anything else
     catalog_rules.append({
-        "group": "|".join(dsl['admin_groups']),
+        "group": "|".join(dsl['admin-groups']),
         "allow": "all"
         })
     schema_rules.append({
-        "group": "|".join(dsl['admin_groups']),
+        "group": "|".join(dsl['admin-groups']),
         "owner": True
         })
     table_rules.append({
-        "group": "|".join(dsl['admin_groups']),
+        "group": "|".join(dsl['admin-groups']),
         "privileges": _table_admin_privs
         })
 
@@ -79,7 +79,7 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
         public = spec['public']
         # table admin group rules go first to override others
         table_rules.append({
-            "group": "|".join(spec['admin_groups']),
+            "group": "|".join(spec['admin-groups']),
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "table": spec['table'],
@@ -87,18 +87,18 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
             })
         # detect row-level access if it was configured
         rafilter = None
-        if "row_acl" in spec:
-            rowspec = spec['row_acl']
+        if "row-acl" in spec:
+            rowspec = spec['row-acl']
             rstype = rowspec['type']
             if rstype == "filter":
                 rafilter = rowspec['filter']
             else:
-                raise ValueError(f"unrecognized row_acl type {rstype}")
+                raise ValueError(f"unrecognized row-acl type {rstype}")
         # construct column access rules if any are configured
         hcols = []
-        if "column_acl" in spec:
-            for hspec in spec['column_acl']:
-                hcols.extend(hspec['hide_columns'])
+        if "column-acl" in spec:
+            for hspec in spec['column-acl']:
+                hcols.extend(hspec['hide-columns'])
                 if "groups" in hspec:
                     rule = {
                         "group": "|".join(hspec['groups']),
@@ -127,7 +127,7 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
     for spec in dsl['schemas']:
         # configure group(s) with ownership of this schema
         schema_rules.append({
-            "group": "|".join(spec['admin_groups']),
+            "group": "|".join(spec['admin-groups']),
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "owner": True
@@ -135,7 +135,7 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
         # schema rules for tables section are lower priority than table-specific above
         table_rules.append({
             # ensure that schema admins also have full table-level privs inside their schema
-            "group": "|".join(spec['admin_groups']),
+            "group": "|".join(spec['admin-groups']),
             "catalog": spec['catalog'],
             "schema": spec['schema'],
             "privileges": _table_admin_privs
@@ -144,27 +144,27 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
             # set the default public privs inside this schema
             "catalog": spec['catalog'],
             "schema": spec['schema'],
-            "privileges": _table_public_privs if spec['public_tables'] else []
+            "privileges": _table_public_privs if spec['public-tables'] else []
             })
 
     # next are catalog rules
     for spec in dsl['catalogs']:
         # configure group(s) with read+write access to this catalog
         catalog_rules.append({
-            "group": "|".join(spec['admin_groups']),
+            "group": "|".join(spec['admin-groups']),
             "catalog": spec['catalog'],
             "allow": "all"
             })
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({
             "catalog": spec['catalog'],
-            "privileges": _table_public_privs if spec['public_tables'] else []
+            "privileges": _table_public_privs if spec['public-tables'] else []
             })
 
     # global default rules go last
     table_rules.append({
         # default table privs can be 'read-only' (i.e. select) or 'no privileges'
-        "privileges": _table_public_privs if dsl['public_tables'] else []
+        "privileges": _table_public_privs if dsl['public-tables'] else []
         })
     schema_rules.append({
         # defaulting all schemas to owner is not safe

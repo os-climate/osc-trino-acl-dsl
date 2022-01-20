@@ -1,48 +1,48 @@
 # 'admins' gets full privileges everywhere
-admin_groups: [ admins ]
+admin-groups: [ admins ]
 
 # default is that tables are all publicly readable
 # unless otherwise specified
-public_tables: true
+public-tables: true
 
 # here is where we define policies for each catalog
 catalogs:
     # a development catalog
   - catalog: dev
     # admin for a catalog is equivalent to "allow all"
-    admin_groups: [ '.*' ]
+    admin-groups: [ '.*' ]
     # default to publicly readable tables in this catalog
-    public_tables: true
+    public-tables: true
 
     # a production catalog
   - catalog: prod
     # anyone in a workflow dev group has "admin" on prod catalog
     # other users have read-only
-    admin_groups:
+    admin-groups:
       - workflow_a_dev
       - workflow_b_dev
-    public_tables: true
+    public-tables: true
 
 # define schema-specific policies
 # "admin" (i.e. "owner") privs must be configured specifically for each
 schemas:
   - catalog: dev
     schema: sandbox
-    admin_groups: [ '.*' ] # the dev.sandbox schema is owned by everyone
-    public_tables: true
+    admin-groups: [ '.*' ] # the dev.sandbox schema is owned by everyone
+    public-tables: true
 
     # the workflow_a schema
     # note that this schema defaults tables to non-public (no privs)
   - catalog: prod
     schema: workflow_a
-    admin_groups: [ workflow_a_dev ]
-    public_tables: false
+    admin-groups: [ workflow_a_dev ]
+    public-tables: false
 
     # the workflow_b schema
   - catalog: prod
     schema: workflow_b
-    admin_groups: [ workflow_b_dev ]
-    public_tables: true
+    admin-groups: [ workflow_b_dev ]
+    public-tables: true
 
 # all table-specific configurations go here
 tables: []
