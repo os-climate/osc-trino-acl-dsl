@@ -65,7 +65,7 @@
                     { "$ref": "#/definitions/row_acl_filter" }
                 ]}
             },
-            "required": ["catalog", "schema", "table", "admin_groups", "public_tables"]
+            "required": ["catalog", "schema", "table", "admin_groups", "public"]
         },
         "group_array": {
             "description": "an array of group patterns",
