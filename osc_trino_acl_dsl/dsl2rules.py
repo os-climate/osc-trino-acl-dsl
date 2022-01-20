@@ -2,6 +2,9 @@ import json
 import os
 import sys
 
+# from pyyaml package
+import yaml
+
 _dsl_schema_cache = None
 _dsl_validator_cache = None
 
@@ -182,11 +185,15 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
     return rules
 
 def main():
-    dsl_json_fname = sys.argv[1]
+    dsl_fname = sys.argv[1]
 
-    with open(dsl_json_fname, 'r') as dsl_file:
-        # future work: support both json and yaml, probably use pyyaml lib
-        dsl = json.load(dsl_file)
+    with open(dsl_fname, 'r') as dsl_file:
+        if dsl_fname.endswith(".json"):
+            dsl = json.load(dsl_file)
+        elif dsl_fname.endswith(".yaml"):
+            dsl = yaml.safe_load(dsl_file)
+        else:
+            raise ValueError(f"Filename {dsl_fname} had unrecognized suffix")
 
     rules = dsl_to_rules(dsl, validate = True)
 

@@ -30,7 +30,7 @@ setup(
         # also requires corresponding entry in MANIFEST.in to work with dist
         "osc_trino_acl_dsl": ["jsonschema/*.json"],
     },
-    install_requires = ["jsonschema"],
+    install_requires = ["jsonschema", "pyyaml"],
     entry_points = {
         "console_scripts": [
             "trino-dsl-to-rules=osc_trino_acl_dsl.dsl2rules:main",
