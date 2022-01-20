@@ -1,0 +1,25 @@
+admin_groups: [ admins ]
+public_tables: true
+catalogs:
+  - catalog: dev
+    admin_groups: [ '.*' ]
+    public_tables: true
+  - catalog: prod
+    admin_groups:
+      - workflow_a_dev
+      - workflow_b_dev
+    public_tables: true
+schemas:
+  - catalog: dev
+    schema: sandbox
+    admin_groups: [ '.*' ]
+    public_tables: true
+  - catalog: prod
+    schema: workflow_a
+    admin_groups: [ workflow_a_dev ]
+    public_tables: false
+  - catalog: prod
+    schema: workflow_b
+    admin_groups: [ workflow_b_dev ]
+    public_tables true
+tables: []
