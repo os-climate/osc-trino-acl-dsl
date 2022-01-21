@@ -45,5 +45,52 @@ schemas:
     public-tables: true
 
 # all table-specific configurations go here
-tables: []
+tables:
+    # a user-facing table for workflow A
+    # general public does not have privileges for this
+  - catalog: prod
+    schema: workflow_a
+    table: userfacing
+    admin-groups: [ workflow_a_dev ]
+    public: false
+    # column ACL is cumulative
+    # each entry includes hidden columns from previous entries
+    # so that later entries have fewer visible columns
+    column-acl:
+      - hide-columns:
+          - dev_a
+        groups: [ workflow_a_quant ]
+      - hide-columns: # workflow_a_user cannot see quant_a or dev_a
+          - quant_a
+        groups: [ workflow_a_user ]
+
+    # workflow A back-end table - only visible to dev group, which
+    # also has full admin privs
+  - catalog: prod
+    schema: workflow_a
+    table: backend
+    admin-groups: [ workflow_a_dev ]
+    public: false
+
+    # a front-end table for workflow B
+    # this allows public visibility, but only at lowest-priv column visibility
+  - catalog: prod
+    schema: workflow_b
+    table: frontend
+    admin-groups: [ workflow_b_dev ]
+    public: true
+    # any row or column ACL will always be applied to general public rules for this table
+    column-acl:
+      - hide-columns:
+          - access  # newer releases of trino allow us to hide this and still use it for filtering
+          - dev_b
+        groups: [ workflow_b_quant ]
+      - hide-columns:
+          # this entry has no group. however, it will apply to general public
+          - quant_b
+    row-acl:
+      # specify row filtering with a raw sql clause - you are responsible for correctness!
+      # other forms of row acl might be supported in the future
+      type: filter
+      filter: "contains(current_groups(), access) or access = 'public'"
 
