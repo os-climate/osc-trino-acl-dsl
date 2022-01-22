@@ -34,6 +34,7 @@ setup(
     entry_points = {
         "console_scripts": [
             "trino-dsl-to-rules=osc_trino_acl_dsl.dsl2rules:main",
+            "trino-acl-dsl-check=osc_trino_acl_dsl.rules_precommit_check:main",
         ],
     },
 )
