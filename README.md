@@ -3,7 +3,9 @@ A declarative format for configuring Trino access control
 
 To operationalize this code you need Trino adminstrator privileges
 
-### example:
+### examples:
+
+#### Converting Trino ACL DSL to a rules.json
 ```sh
 # install package using pipenv, pip or similar tools
 $ pipenv install osc-trino-acl-dsl
@@ -26,3 +28,28 @@ $ head rules.json
             "catalog": "dev",
             "allow": "all"
 ```
+
+#### Using pre-commit checks
+For more information on pre-commit checks, see [here](https://pre-commit.com/)
+
+Here is an example entry for `.pre-commit-config.yaml`
+```yaml
+repos:
+  - repo: https://github.com/os-climate/osc-trino-acl-dsl
+    rev: v0.2.0
+    hooks:
+      # a pre-commit check to verify that an ACL DSL yaml file is in sync with rules.json file
+      - id: trino-acl-dsl-check
+        # by default, check pattern matches files named 'trino-acl-dsl.yaml'
+        # args: [ '--check-pattern=^my-file-regex\.yaml$' ]
+```
+
+### building and testing
+
+#### iterative dev/test for pre-commit checks
+
+1. check out this repository
+1. make some change to precommit checks you want to test
+1. in a test repository, make an edit you expect your precommit check to operate on, then `git add` this edit (i.e. stage it for commit) but do NOT commit it, so the precommit check sees it and properly provides staged files to the argument list.
+1. run `pre-commit try-repo /path/to/osc-trino-acl-dsl --verbose` (see [here](https://pre-commit.com/#pre-commit-try-repo))
+1. examine the output of your precommit check to see if it did what you want

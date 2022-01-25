@@ -1,0 +1,6 @@
+- id: trino-acl-dsl-check
+  name: Trino ACL DSL Check
+  description: Verify that rules DSL yaml file is consistent with a corresponding rules.json file
+  entry: trino-acl-dsl-check
+  language: python
+  types: [yaml]
