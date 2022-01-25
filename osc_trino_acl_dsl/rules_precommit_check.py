@@ -11,35 +11,65 @@ import jsonschema
 from .dsl2rules import dsl_to_rules
 from .__init__ import __version__
 
-_out_of_sync_message = """{prog}: {jsonfile} out of sync with {dslfile}
+_out_of_sync_message = """
+{prog}: {jsonfile} out of sync with {dslfile}
 
 suggested steps to fix your commit:
-$ pip install --user osc-trino-acl-dsl=={version}
+$ pip install --user --upgrade osc-trino-acl-dsl=={version}
 $ trino-dsl-to-rules {dslfile} > {jsonfile}
 $ git add {jsonfile}
+"""
+
+_unchecked_rules_message = """
+{prog}: Found modified rules.json files with no corresponding DSL edits:
+{flist}
+
+For rules.json managed by DSL, suggested steps to fix:
+$ pip install --user --upgrade osc-trino-acl-dsl=={version}
+# <make your edits to dsl yaml file>
+$ trino-dsl-to-rules path/to/<dsl>.yaml > path/to/rules.json
+$ git add path/to/<dsl>.yaml path/to/rules.json
+
+If any of these rules.json files are NOT being managed by a DSL file,
+you can fix this by adding an entry to the 'exclude' attribute for this hook
+in your .pre-commit-config.yaml, so this check ignores any unmanaged rules.json files
+see: https://pre-commit.com/#config-exclude
 """
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('paths', metavar='CHECK_FILES', nargs='*',
         help='files to check, normally files staged for git commit')
-    parser.add_argument('--check-pattern', metavar='CHECK_PATTERN',
-        help='check only files that match this regular expression',
-        default='^trino-acl-dsl\.yaml$')
 
     # parse command line args
     args = parser.parse_args(sys.argv[1:]) # argv[0] is command
 
-    # precompile our regular expression that defines which files to check
-    print(f"{parser.prog}: checking files matching regex '{args.check_pattern}'")
-    checkre = re.compile(args.check_pattern)
+    # I am assuming the `files` attribute in .pre-commit-hooks.yaml
+    # (or override in  .pre-commit-config.yaml) is properly set to
+    # pass only the expected DSL and rules.json files.
+    unchecked_rules_json = set([p for p in args.paths if p.endswith(".json")])
+    dsl_yaml = [p for p in args.paths if p.endswith(".yaml")]
 
-    for pname in args.paths:
-        dname, fname = os.path.split(pname)
-        if not checkre.match(fname):
-            print(f"{parser.prog}: ignoring {pname}")
-            continue
+    # from the above, notice that I'm taking advantage of the fact that
+    # yaml is the DSL, and json is the trino rules.  If either of those
+    # conventions ever changes, I'll need some other convention so that I
+    # can reliably separate one from the other.
+
+    # It is also possible to make the 'files' regex very path-specific
+    # so you could configure one preconfig check for each dsl/rules pair
+    # and each matches exactly one pair in your repo
+
+    # useful diagnostic, in the event of a check failure
+    print("{prog}: staged DSL files:\n{flist}\n".format(
+        prog = parser.prog,
+        flist = "\n".join(dsl_yaml)))
+    print("{prog}: staged rule files:\n{flist}\n".format(
+        prog = parser.prog,
+        flist = "\n".join(unchecked_rules_json)))
+
+    for pname in dsl_yaml:
         print(f"{parser.prog}: checking {pname}")
+        dname, fname = os.path.split(pname)
         rulespath = os.path.join(dname, "rules.json")
         if not os.path.isfile(rulespath):
             # I expect a rules.json file for any file that matches the pattern
@@ -66,7 +96,23 @@ def main():
             sys.exit(1)
         # all checks passed for current file
         print(f"{parser.prog}: check succeeded for {pname}")
+        # we validated a DSL -> rules.json pair, so I can check-off the rules file
+        unchecked_rules_json.remove(rulespath)
+
+    # If there are any remaining unchecked rules.json files,
+    # there are two possibilites:
+    # 1) there is an "unmanaged" rules.json file (not using DSL)
+    # 2) the user edited a managed rules.json file instead of the DSL
+    # case (1) should be addressed by using 'exclude' in .pre-commit-config.yaml
+    if len(unchecked_rules_json) > 0:
+        print(_unchecked_rules_message.format(
+            prog = parser.prog,
+            flist = "\n".join(unchecked_rules_json),
+            version = __version__))
+        sys.exit(1)
+
     # all checks passed for any matching files, exit with 'success'
+    print(f"{parser.prog}: all files passed")
     sys.exit(0)
 
 if __name__ == "__main__":

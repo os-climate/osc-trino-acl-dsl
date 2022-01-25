@@ -3,4 +3,26 @@
   description: Verify that rules DSL yaml file is consistent with a corresponding rules.json file
   entry: trino-acl-dsl-check
   language: python
-  types: [yaml]
+  # force serial so I can properly analyze relation between all files
+  # (the files regex below will exclude all but a small number anyway)
+  require_serial: true
+  # consider dsl (yaml) or trino rules (json) file types
+  types_or: [yaml, json]
+  # match either the dsl file or the rules.json file
+  #
+  # Note, you can override this in your own .pre-commit-config.yaml
+  # It is important to include 'rules.json' in the pattern below, if
+  # you want to check the case that someone accidentally edited rules.json
+  # instead of editing trino-acl-dsl.yaml (the correct method)
+  #
+  # It is also possible to make the 'files' regex very path-specific
+  # so you could configure one preconfig check for each dsl/rules pair
+  # and each matches exactly one pair in your repo
+  #
+  # see multi-line regex format:
+  # https://pre-commit.com/#regular-expressions
+  files: |
+    (?x)^(.*/)?(
+      trino-acl-dsl\.yaml|
+      rules\.json
+    )$
