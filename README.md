@@ -33,6 +33,7 @@ $ head rules.json
 For more information on pre-commit checks, see [here](https://pre-commit.com/)
 
 Here is an example entry for `.pre-commit-config.yaml`
+For more info see [here](https://github.com/os-climate/osc-trino-acl-dsl/blob/main/.pre-commit-hooks.yaml)
 ```yaml
 repos:
   - repo: https://github.com/os-climate/osc-trino-acl-dsl
@@ -40,8 +41,6 @@ repos:
     hooks:
       # a pre-commit check to verify that an ACL DSL yaml file is in sync with rules.json file
       - id: trino-acl-dsl-check
-        # by default, check pattern matches files named 'trino-acl-dsl.yaml'
-        # args: [ '--check-pattern=^my-file-regex\.yaml$' ]
 ```
 
 ### building and testing
@@ -53,3 +52,22 @@ repos:
 1. in a test repository, make an edit you expect your precommit check to operate on, then `git add` this edit (i.e. stage it for commit) but do NOT commit it, so the precommit check sees it and properly provides staged files to the argument list.
 1. run `pre-commit try-repo /path/to/osc-trino-acl-dsl --verbose` (see [here](https://pre-commit.com/#pre-commit-try-repo))
 1. examine the output of your precommit check to see if it did what you want
+
+#### publish new version to pypi
+- update all occurrences of `__version__` (try `git grep version`)
+- `python3 setup.py clean` or `git clean -fdx`
+- `python3 setup.py sdist`
+- `twine check dist/*`
+- `twine upload dist/*`
+- push latest to repo
+- create new release tag on github
+
+upload test or release candidate:
+- twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+### python packaging resources
+
+- https://packaging.python.org/
+- https://packaging.python.org/tutorials/packaging-projects/
+- https://realpython.com/pypi-publish-python-package/
+
