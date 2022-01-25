@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name = "osc-trino-acl-dsl",
-    version = "0.2.0",
+    version = "0.2.1",
     description = "A DSL for generating rules.json files for Trino",
     long_description = README,
     long_description_content_type = "text/markdown",

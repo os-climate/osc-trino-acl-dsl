@@ -37,7 +37,7 @@ For more info see [here](https://github.com/os-climate/osc-trino-acl-dsl/blob/ma
 ```yaml
 repos:
   - repo: https://github.com/os-climate/osc-trino-acl-dsl
-    rev: v0.2.0
+    rev: v0.2.1
     hooks:
       # a pre-commit check to verify that an ACL DSL yaml file is in sync with rules.json file
       - id: trino-acl-dsl-check
