@@ -80,8 +80,7 @@
                 "groups": { "$ref": "#/definitions/group-array" },
                 "hide-columns": {
                     "type": "array",
-                    "items": { "$ref": "#/definitions/trino-id" },
-                    "minItems": 1
+                    "items": { "$ref": "#/definitions/trino-id" }
                 }
             },
             "required": ["hide-columns"]
