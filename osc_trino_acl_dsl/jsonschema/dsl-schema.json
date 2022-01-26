@@ -101,7 +101,7 @@
         "trino-id": {
             "description": "a valid trino identifier, e.g. catalog, schema, or table name",
             "type": "string",
-            "pattern": "^[a-z][a-z_]*$"
+            "pattern": "^[a-z][a-z0-9_]*$"
         },
         "trino-id-regex": {
             "description": "a trino id, or regex to match some id(s). TODO: define pattern",
