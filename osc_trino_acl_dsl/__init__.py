@@ -5,7 +5,7 @@ A DSL for generating rules.json files for Trino
 """
 
 # defines the release version for this python package
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 from .dsl2rules import *
 
