@@ -138,12 +138,14 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
             "group": "|".join(spec['admin-groups']),
             "catalog": spec['catalog'],
             "schema": spec['schema'],
+            "table": ".*",
             "privileges": _table_admin_privs
             })
         table_rules.append({
             # set the default public privs inside this schema
             "catalog": spec['catalog'],
             "schema": spec['schema'],
+            "table": ".*",
             "privileges": _table_public_privs if spec['public-tables'] else []
             })
 
@@ -158,21 +160,29 @@ def dsl_to_rules(dsl: dict, validate = True) -> dict:
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({
             "catalog": spec['catalog'],
+            "schema": ".*",
+            "table": ".*",
             "privileges": _table_public_privs if spec['public-tables'] else []
             })
 
     # global default rules go last
     table_rules.append({
         # default table privs can be 'read-only' (i.e. select) or 'no privileges'
+        "catalog": ".*",
+        "schema": ".*",
+        "table": ".*",
         "privileges": _table_public_privs if dsl['public-tables'] else []
         })
     schema_rules.append({
         # defaulting all schemas to owner is not safe
         # schemas should be assigned ownership on an explicit basis
+        "catalog": ".*",
+        "schema": ".*",
         "owner": False
         })
     catalog_rules.append({
         # allows basic 'show schemas' and 'show tables' operations for everyone
+        "catalog": ".*",
         "allow": "read-only" 
         })
 
