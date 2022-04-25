@@ -1,96 +1,106 @@
 # 'admins' gets full privileges everywhere
-admin-groups: [ admins ]
+admin:
+- group: admins
 
 # default is that tables are all publicly readable
 # unless otherwise specified
-public-tables: true
+public: true
 
 # here is where we define policies for each catalog
 catalogs:
-    # a development catalog
-  - catalog: dev
-    # admin for a catalog is equivalent to "allow all"
-    admin-groups: [ '.*' ]
-    # default to publicly readable tables in this catalog
-    public-tables: true
+# a development catalog
+- catalog: dev
+  # admin for a catalog is equivalent to "allow all"
+  admin:
+  - group: '.*'
+  # default to publicly readable tables in this catalog
+  public: true
 
-    # a production catalog
-  - catalog: prod
-    # anyone in a workflow dev group has "admin" on prod catalog
-    # other users have read-only
-    admin-groups:
-      - workflow_a_dev
-      - workflow_b_dev
-    public-tables: true
+# a production catalog
+- catalog: prod
+  # anyone in a workflow dev group has "admin" on prod catalog
+  # other users have read-only
+  admin:
+  - group: workflow_a_dev
+  - group: workflow_b_dev
+  public: true
 
 # define schema-specific policies
 # "admin" (i.e. "owner") privs must be configured specifically for each
 schemas:
-  - catalog: dev
-    schema: sandbox
-    admin-groups: [ '.*' ] # the dev.sandbox schema is owned by everyone
-    public-tables: true
+- catalog: dev
+  schema: sandbox
+  admin:
+  - group: '.*' # the dev.sandbox schema is owned by everyone
+  public: true
 
-    # the workflow_a schema
-    # note that this schema defaults tables to non-public (no privs)
-  - catalog: prod
-    schema: workflow_a
-    admin-groups: [ workflow_a_dev ]
-    public-tables: false
+# the workflow_a schema
+# note that this schema defaults tables to non-public (no privs)
+- catalog: prod
+  schema: workflow_a
+  admin:
+  - group: workflow_a_dev
+  public: false
 
-    # the workflow_b schema
-  - catalog: prod
-    schema: workflow_b
-    admin-groups: [ workflow_b_dev ]
-    public-tables: true
+# the workflow_b schema
+- catalog: prod
+  schema: workflow_b
+  admin: 
+  - group: workflow_b_dev
+  public: true
+
+# a "personal" sandbox for a user
+- catalog: dev
+  schema: sandbox_userx
+  admin:
+  - user: userx
+  public: false
 
 # all table-specific configurations go here
 tables:
-    # a user-facing table for workflow A
-    # general public does not have privileges for this
-  - catalog: prod
-    schema: workflow_a
-    table: userfacing
-    admin-groups: [ workflow_a_dev ]
-    public: false
-    # column ACL is cumulative
-    # each entry includes hidden columns from previous entries
-    # so that later entries have fewer visible columns
-    column-acl:
-      - hide-columns:
-          - dev_a
-        groups: [ workflow_a_quant ]
-      - hide-columns: # workflow_a_user cannot see quant_a or dev_a
-          - quant_a
-        groups: [ workflow_a_user ]
+# a user-facing table for workflow A
+# general public does not have privileges for this
+- catalog: prod
+  schema: workflow_a
+  table: userfacing
+  admin:
+  - group: workflow_a_dev
+  public:
+    hide: [dev_a, quant_a, user_a]
+    filter: ["country = 'spain'"]
+  acl:
+  - hide: [dev_a]
+    id:
+    - group: workflow_a_quant
+  - hide: [dev_a, quant_a]
+    filter: ["year <= 2022"]
+    id:
+    - group: workflow_a_users
+    - user: usery
 
-    # workflow A back-end table - only visible to dev group, which
-    # also has full admin privs
-  - catalog: prod
-    schema: workflow_a
-    table: backend
-    admin-groups: [ workflow_a_dev ]
-    public: false
+# workflow A back-end table - only visible to dev group, which
+# also has full admin privs
+- catalog: prod
+  schema: workflow_a
+  table: backend
+  admin:
+  - group: workflow_a_dev
+  - user: userz
+  public: false
 
-    # a front-end table for workflow B
-    # this allows public visibility, but only at lowest-priv column visibility
-  - catalog: prod
-    schema: workflow_b
-    table: frontend
-    admin-groups: [ workflow_b_dev ]
-    public: true
-    # any row or column ACL will always be applied to general public rules for this table
-    column-acl:
-      - hide-columns:
-          - access  # newer releases of trino allow us to hide this and still use it for filtering
-          - dev_b
-        groups: [ workflow_b_quant ]
-      - hide-columns:
-          # this entry has no group. however, it will apply to general public
-          - quant_b
-    row-acl:
-      # specify row filtering with a raw sql clause - you are responsible for correctness!
-      # other forms of row acl might be supported in the future
-      type: filter
-      filter: "contains(current_groups(), access) or access = 'public'"
-
+# a front-end table for workflow B
+# this allows public visibility, but only at lowest-priv column visibility
+- catalog: prod
+  schema: workflow_b
+  table: frontend
+  admin:
+  - group: workflow_b_dev
+  public:
+    hide: [quant_b]
+    filter: ["hardware = 'donut-stomper'"]
+  # any row or column ACL will always be applied to general public rules for this table
+  acl:
+  - hide: [access, dev_b]
+    filter: ["hardware = 'banana-peeler'"]
+    id:
+    - user: quantw
