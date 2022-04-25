@@ -1,10 +1,8 @@
 import argparse
 import json
 import os
-import re
 import sys
 
-import jsonschema
 import yaml  # via pyyaml module
 
 from .__init__ import __version__

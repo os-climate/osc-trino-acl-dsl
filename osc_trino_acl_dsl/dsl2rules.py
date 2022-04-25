@@ -1,5 +1,4 @@
 import json
-import os
 import sys
 
 # from pyyaml package
@@ -51,7 +50,7 @@ def _acl_users(jobj: dict, k="admin") -> list:
     return [e["user"] for e in jobj[k] if ("user" in e)]
 
 
-def dsl_to_rules(dsl: dict, validate=True) -> dict:
+def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     """
     Transform DSL json structure to trino 'rules.json' structure
 
@@ -66,6 +65,8 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:
         # validate the dsl json structure against the DSL json-schema
         dsl_json_validator().validate(dsl)
 
+    # mypy type checking may prefer these be typed but needs py3.9 to
+    # support clean list[dict] type annotation
     catalog_rules = []
     schema_rules = []
     table_rules = []
@@ -165,10 +166,10 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:
         # configure group(s) with read+write access to this catalog
         ugs = _acl_groups(spec)
         if len(ugs) > 0:
-            catalog_rules.append({"group": "|".join(ugs)} | rule)
+            catalog_rules.append({"group": "|".join(ugs)} | rule)  # type: ignore
         ugs = _acl_users(spec)
         if len(ugs) > 0:
-            catalog_rules.append({"user": "|".join(ugs)} | rule)
+            catalog_rules.append({"user": "|".join(ugs)} | rule)  # type: ignore
 
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({"catalog": spec["catalog"], "privileges": _table_public_privs if spec["public"] else []})
