@@ -79,13 +79,48 @@ def test_dsl_minimal():
     rules = dsl_to_rules(dsl, validate=True)
 
     # test permissions of the admin group
-    allow, owner, privs = rule_permissions(User("u", "admins"), Table("x", "x", "x"), rules)
+    allow, owner, privs = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
     assert allow == "all"
     assert owner is True
     assert privs == _table_admin_privs
 
     # test permissions of generic user
-    allow, owner, privs = rule_permissions(User("u", []), Table("x", "x", "x"), rules)
+    allow, owner, privs = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert allow == "read-only"
+    assert owner is False
+    assert privs == _table_public_privs
+
+
+def test_dsl_catalog():
+    admin1 = {"group": "admins"}
+    cat1 = {"catalog": "dev", "admin": [{"group": "devs"}, {"user": "userx"}], "public": False}
+    dsl = {"admin": [admin1], "public": True, "catalogs": [cat1], "schemas": [], "tables": []}
+    rules = dsl_to_rules(dsl, validate=True)
+
+    # test permissions of the admin group
+    allow, owner, privs = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert allow == "all"
+    assert owner is True
+    assert privs == _table_admin_privs
+
+    # test permissions of the dev group on the dev catalog
+    allow, owner, privs = rule_permissions(User("x", "devs"), Table("dev", "x", "x"), rules)
+    assert allow == "all"
+    assert owner is False
+    assert privs == []
+
+    allow, owner, privs = rule_permissions(User("userx", []), Table("dev", "x", "x"), rules)
+    assert allow == "all"
+    assert owner is False
+    assert privs == []
+
+    allow, owner, privs = rule_permissions(User("x", "nondev"), Table("dev", "x", "x"), rules)
+    assert allow == "read-only"
+    assert owner is False
+    assert privs == []
+
+    # test permissions of generic user and non-dev catalog
+    allow, owner, privs = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
     assert allow == "read-only"
     assert owner is False
     assert privs == _table_public_privs
