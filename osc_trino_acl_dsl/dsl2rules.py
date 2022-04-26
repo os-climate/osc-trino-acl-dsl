@@ -50,6 +50,14 @@ def _acl_users(jobj: dict, k="admin") -> list:
     return [e["user"] for e in jobj[k] if ("user" in e)]
 
 
+# python is so dumb
+def _union(d1: dict, d2: dict) -> dict:
+    """equivalent to (d1 | d2) in py >= 3.9"""
+    u = d1.copy()
+    u.update(d2)
+    return u
+
+
 def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     """
     Transform DSL json structure to trino 'rules.json' structure
@@ -89,51 +97,51 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     for spec in dsl["tables"]:
         cst = {"catalog": spec["catalog"], "schema": spec["schema"], "table": spec["table"]}
         # table admin group rules go first to override others
-        rule = cst | {"privileges": _table_admin_privs}
+        rule = _union(cst, {"privileges": _table_admin_privs})
         ugs = _acl_groups(spec)
         if len(ugs) > 0:
-            table_rules.append({"group": "|".join(ugs)} | rule)
+            table_rules.append(_union({"group": "|".join(ugs)}, rule))
         ugs = _acl_users(spec)
         if len(ugs) > 0:
-            table_rules.append({"user": "|".join(ugs)} | rule)
+            table_rules.append(_union({"user": "|".join(ugs)}, rule))
         # construct acl rules if any are configured
         uhide = set()
         ufilter = set()
         if "acl" in spec:
             for acl in spec["acl"]:
-                rule = cst | {"privileges": _table_public_privs}
+                rule = _union(cst, {"privileges": _table_public_privs})
                 if "hide" in acl:
-                    uhide |= set(acl["hide"])
-                    rule |= {"columns": [{"name": col, "allow": False} for col in acl["hide"]]}
+                    uhide.update(set(acl["hide"]))
+                    rule.update({"columns": [{"name": col, "allow": False} for col in acl["hide"]]})
                 if "filter" in acl:
-                    ufilter |= set(acl["filter"])
-                    rule |= {"filter": " and ".join([f"({f})" for f in acl["filter"]])}
+                    ufilter.update(set(acl["filter"]))
+                    rule.update({"filter": " and ".join([f"({f})" for f in acl["filter"]])})
                 ugs = _acl_groups(acl, k="id")
                 if len(ugs) > 0:
-                    table_rules.append({"group": "|".join(ugs)} | rule)
+                    table_rules.append(_union({"group": "|".join(ugs)}, rule))
                 ugs = _acl_users(acl, k="id")
                 if len(ugs) > 0:
-                    table_rules.append({"user": "|".join(ugs)} | rule)
+                    table_rules.append(_union({"user": "|".join(ugs)}, rule))
         # table default policy goes last
         # spec['public'] can be either boolean or an object, and it
         # registers as True if it is an object or boolean value True
         pub = spec["public"]
-        rule = cst | {"privileges": _table_public_privs if pub else []}
+        rule = _union(cst, {"privileges": _table_public_privs if pub else []})
         if type(pub) == dict:
             # if 'public' was specified as an object with settings, then
             # include these in the union of all hidden columns and filters
             if "hide" in pub:
-                uhide |= set(pub["hide"])
+                uhide.update(set(pub["hide"]))
             if "filter" in pub:
-                ufilter |= set(pub["filter"])
+                ufilter.update(set(pub["filter"]))
         if pub:
             # if table is set to general public access, then include
             # all hidden columns and row filters in the acl list, so that
             # public cannot see anything hidden by any other row/col ACL rule
             if len(uhide) > 0:
-                rule |= {"columns": [{"name": col, "allow": False} for col in uhide]}
+                rule.update({"columns": [{"name": col, "allow": False} for col in uhide]})
             if len(ufilter) > 0:
-                rule |= {"filter": " and ".join([f"({f})" for f in ufilter])}
+                rule.update({"filter": " and ".join([f"({f})" for f in ufilter])})
         table_rules.append(rule)
 
     # next are schema rules
@@ -142,23 +150,17 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         # configure group(s) with ownership of this schema
         ugs = _acl_groups(spec)
         if len(ugs) > 0:
-            schema_rules.append(cst | {"group": "|".join(ugs), "owner": True})
+            schema_rules.append(_union(cst, {"group": "|".join(ugs), "owner": True}))
             # schema rules for tables section are lower priority than table-specific above
-            table_rules.append(
-                cst
-                | {
-                    # ensure that schema admins also have full table-level privs inside their schema
-                    "group": "|".join(ugs),
-                    "privileges": _table_admin_privs,
-                }
-            )
+            # ensure that schema admins also have full table-level privs inside their schema
+            table_rules.append(_union(cst, {"group": "|".join(ugs), "privileges": _table_admin_privs}))
         # add corresponding rules for any user patterns
         ugs = _acl_users(spec)
         if len(ugs) > 0:
-            schema_rules.append(cst | {"user": "|".join(ugs), "owner": True})
-            table_rules.append(cst | {"user": "|".join(ugs), "privileges": _table_admin_privs})
+            schema_rules.append(_union(cst, {"user": "|".join(ugs), "owner": True}))
+            table_rules.append(_union(cst, {"user": "|".join(ugs), "privileges": _table_admin_privs}))
         # set the default public privs inside this schema
-        table_rules.append(cst | {"privileges": _table_public_privs if spec["public"] else []})
+        table_rules.append(_union(cst, {"privileges": _table_public_privs if spec["public"] else []}))
 
     # next are catalog rules
     for spec in dsl["catalogs"]:
@@ -166,10 +168,10 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         # configure group(s) with read+write access to this catalog
         ugs = _acl_groups(spec)
         if len(ugs) > 0:
-            catalog_rules.append({"group": "|".join(ugs)} | rule)  # type: ignore
+            catalog_rules.append(_union({"group": "|".join(ugs)}, rule))
         ugs = _acl_users(spec)
         if len(ugs) > 0:
-            catalog_rules.append({"user": "|".join(ugs)} | rule)  # type: ignore
+            catalog_rules.append(_union({"user": "|".join(ugs)}, rule))
 
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({"catalog": spec["catalog"], "privileges": _table_public_privs if spec["public"] else []})
