@@ -10,19 +10,11 @@ public: true
 catalogs:
 # a development catalog
 - catalog: dev
-  # admin for a catalog is equivalent to "allow all"
-  admin:
-  - group: '.*'
   # default to publicly readable tables in this catalog
   public: true
 
 # a production catalog
 - catalog: prod
-  # anyone in a workflow dev group has "admin" on prod catalog
-  # other users have read-only
-  admin:
-  - group: workflow_a_dev
-  - group: workflow_b_dev
   public: true
 
 # define schema-specific policies

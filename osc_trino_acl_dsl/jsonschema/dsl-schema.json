@@ -31,10 +31,9 @@
             "type": "object",
             "properties": {
                 "catalog": { "$ref": "#/definitions/trino-id" },
-                "admin": { "$ref": "#/definitions/user-group-array" },
                 "public": { "type": "boolean" }
             },
-            "required": ["catalog", "admin", "public"]
+            "required": ["catalog", "public"]
         },
         "schema-entry": {
             "description": "an entry decribing the policy for a database schema",

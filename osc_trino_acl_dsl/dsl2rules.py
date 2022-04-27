@@ -58,6 +58,13 @@ def _union(d1: dict, d2: dict) -> dict:
     return u
 
 
+# so dumb
+def _concat(l1: list, l2: list) -> list:
+    c = l1.copy()
+    c.extend(l2)
+    return c
+
+
 def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     """
     Transform DSL json structure to trino 'rules.json' structure
@@ -93,6 +100,13 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         schema_rules.append({"user": "|".join(ugs), "owner": True})
         table_rules.append({"user": "|".join(ugs), "privileges": _table_admin_privs})
 
+    # any schema or table admins require "allow":"all" on the associated catalog
+    # so it is most effective to just accumulate these and add corresponding rules
+    # in the catalog section
+    # https://trino.io/docs/current/security/file-system-access-control.html#catalog-schema-and-table-access
+    # note there is not a similar issue for table -> schema ownerships
+    uallow = {}
+
     # table rules go here
     for spec in dsl["tables"]:
         cst = {"catalog": spec["catalog"], "schema": spec["schema"], "table": spec["table"]}
@@ -104,6 +118,7 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         ugs = _acl_users(spec)
         if len(ugs) > 0:
             table_rules.append(_union({"user": "|".join(ugs)}, rule))
+        uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
         # construct acl rules if any are configured
         uhide = set()
         ufilter = set()
@@ -159,6 +174,7 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         if len(ugs) > 0:
             schema_rules.append(_union(cst, {"user": "|".join(ugs), "owner": True}))
             table_rules.append(_union(cst, {"user": "|".join(ugs), "privileges": _table_admin_privs}))
+        uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
         # set the default public privs inside this schema
         table_rules.append(_union(cst, {"privileges": _table_public_privs if spec["public"] else []}))
 
@@ -166,12 +182,14 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     for spec in dsl["catalogs"]:
         rule = {"catalog": spec["catalog"], "allow": "all"}
         # configure group(s) with read+write access to this catalog
-        ugs = _acl_groups(spec)
-        if len(ugs) > 0:
-            catalog_rules.append(_union({"group": "|".join(ugs)}, rule))
-        ugs = _acl_users(spec)
-        if len(ugs) > 0:
-            catalog_rules.append(_union({"user": "|".join(ugs)}, rule))
+        # I have concerns about how using "|" style regex is going to scale if number
+        # of schemas and tables grows large, so I am going to encode these as individual rules
+        ugs = set([e["group"] for e in uallow.get(spec["catalog"], []) if "group" in e])
+        for ug in ugs:
+            catalog_rules.append(_union({"group": ug}, rule))
+        ugs = set([e["user"] for e in uallow.get(spec["catalog"], []) if "user" in e])
+        for ug in ugs:
+            catalog_rules.append(_union({"user": ug}, rule))
 
         # catalog rules for tables section are lower priority than schema rules above
         table_rules.append({"catalog": spec["catalog"], "privileges": _table_public_privs if spec["public"] else []})
