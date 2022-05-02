@@ -247,3 +247,78 @@ def test_dsl_table():
     # but userz is not admin for any other table in proj1
     perms = rule_permissions(User("userz", []), Table("dev", "proj1", "x"), rules)
     assert perms == ("all", False, _public)
+
+
+def test_dsl_table_acl():
+    dsl = yaml.load(
+        textwrap.dedent(
+            """
+            admin:
+            - group: admins
+            public: true
+            catalogs:
+            - catalog: dev
+              public: false
+            schemas:
+            - catalog: dev
+              schema: proj1
+              admin:
+              - group: devs
+              - user: usery
+              public: true
+            tables:
+            - catalog: dev
+              schema: proj1
+              table: priv1
+              public: false
+              acl:
+              - id:
+                - user: usera
+                - user: userb
+                filter:
+                - "country = 'london'"
+                - "year < 2061"
+                hide:
+                - column1
+                - column2
+            """
+        ),
+        yaml.SafeLoader,
+    )
+    rules = dsl_to_rules(dsl, validate=True)
+
+    # test permissions of the admin group
+    perms = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert perms == ("all", True, _admin)
+
+    # global default should be readable
+    perms = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert perms == ("read-only", False, _public)
+
+    # dev catalog default should be non-public
+    perms = rule_permissions(User("x", []), Table("dev", "x", "x"), rules)
+    assert perms == ("read-only", False, [])
+
+    # dev.proj1 schema default should be readable
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "x"), rules)
+    assert perms == ("read-only", False, _public)
+
+    # dev.proj1.priv1 should default to non-public
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "priv1"), rules)
+    assert perms == ("read-only", False, [])
+
+    # "usery" and "devs" group have schema admin:
+    perms = rule_permissions(User("x", "devs"), Table("dev", "proj1", "x"), rules)
+    assert perms == ("all", True, _admin)
+    perms = rule_permissions(User("usery", []), Table("dev", "proj1", "x"), rules)
+    assert perms == ("all", True, _admin)
+
+    for u in ["usera", "userb"]:
+        perms = rule_permissions(User(u, []), Table("dev", "proj1", "priv1"), rules)
+        assert perms == ("read-only", False, _public)
+        r = first_matching_rule(User(u, []), Table("dev", "proj1", "priv1"), rules["tables"])
+        print(f"r = {r}\n")
+        assert "filter" in r
+        assert r["filter"] == "(country = 'london') and (year < 2061)"
+        assert "columns" in r
+        assert r["columns"] == [{"name": "column1", "allow": False}, {"name": "column2", "allow": False}]
