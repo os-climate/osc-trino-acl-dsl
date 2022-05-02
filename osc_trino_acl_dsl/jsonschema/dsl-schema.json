@@ -76,7 +76,7 @@
                     "minItems": 1
                 }
             },
-            "required": ["catalog", "schema", "table", "admin", "public"]
+            "required": ["catalog", "schema", "table", "public"]
         },
         "filter-array": {
             "description": "describes row filtering access controls",

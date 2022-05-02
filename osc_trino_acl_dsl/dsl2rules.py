@@ -107,18 +107,39 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     # note there is not a similar issue for table -> schema ownerships
     uallow: dict = {}
 
+    # the semantic definition for schema admin is that it includes
+    # admin over any table in that schema, so these rules need to appear before other table
+    # related rules
+    for spec in dsl["schemas"]:
+        cst = {"catalog": spec["catalog"], "schema": spec["schema"]}
+        # configure group(s) with ownership of this schema
+        ugs = _acl_groups(spec)
+        if len(ugs) > 0:
+            schema_rules.append(_union(cst, {"group": "|".join(ugs), "owner": True}))
+            # ensure that schema admins also have full table-level privs inside their schema
+            table_rules.append(_union(cst, {"group": "|".join(ugs), "privileges": _table_admin_privs}))
+        # add corresponding rules for any user patterns
+        ugs = _acl_users(spec)
+        if len(ugs) > 0:
+            schema_rules.append(_union(cst, {"user": "|".join(ugs), "owner": True}))
+            table_rules.append(_union(cst, {"user": "|".join(ugs), "privileges": _table_admin_privs}))
+        uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
+
     # table rules go here
     for spec in dsl["tables"]:
         cst = {"catalog": spec["catalog"], "schema": spec["schema"], "table": spec["table"]}
-        # table admin group rules go first to override others
-        rule = _union(cst, {"privileges": _table_admin_privs})
-        ugs = _acl_groups(spec)
-        if len(ugs) > 0:
-            table_rules.append(_union({"group": "|".join(ugs)}, rule))
-        ugs = _acl_users(spec)
-        if len(ugs) > 0:
-            table_rules.append(_union({"user": "|".join(ugs)}, rule))
-        uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
+        # "admin" is optional for any individual table because schema admins
+        # are also table admins for any table in the schema
+        if "admin" in spec:
+            # table admin group rules go first to override others
+            rule = _union(cst, {"privileges": _table_admin_privs})
+            ugs = _acl_groups(spec)
+            if len(ugs) > 0:
+                table_rules.append(_union({"group": "|".join(ugs)}, rule))
+            ugs = _acl_users(spec)
+            if len(ugs) > 0:
+                table_rules.append(_union({"user": "|".join(ugs)}, rule))
+            uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
         # construct acl rules if any are configured
         uhide = set()
         ufilter = set()
@@ -159,22 +180,9 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
                 rule.update({"filter": " and ".join([f"({f})" for f in ufilter])})
         table_rules.append(rule)
 
-    # next are schema rules
+    # default schema rules for tables are lower priority than specific table rules
     for spec in dsl["schemas"]:
         cst = {"catalog": spec["catalog"], "schema": spec["schema"]}
-        # configure group(s) with ownership of this schema
-        ugs = _acl_groups(spec)
-        if len(ugs) > 0:
-            schema_rules.append(_union(cst, {"group": "|".join(ugs), "owner": True}))
-            # schema rules for tables section are lower priority than table-specific above
-            # ensure that schema admins also have full table-level privs inside their schema
-            table_rules.append(_union(cst, {"group": "|".join(ugs), "privileges": _table_admin_privs}))
-        # add corresponding rules for any user patterns
-        ugs = _acl_users(spec)
-        if len(ugs) > 0:
-            schema_rules.append(_union(cst, {"user": "|".join(ugs), "owner": True}))
-            table_rules.append(_union(cst, {"user": "|".join(ugs), "privileges": _table_admin_privs}))
-        uallow[spec["catalog"]] = _concat(uallow.get(spec["catalog"], []), spec["admin"])
         # set the default public privs inside this schema
         table_rules.append(_union(cst, {"privileges": _table_public_privs if spec["public"] else []}))
 
@@ -198,9 +206,7 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
     table_rules.append(
         {
             # default table privs can be 'read-only' (i.e. select) or 'no privileges'
-            "privileges": _table_public_privs
-            if dsl["public"]
-            else []
+            "privileges": (_table_public_privs if dsl["public"] else [])
         }
     )
     schema_rules.append(

@@ -1,4 +1,7 @@
 import re
+import textwrap
+
+import yaml
 
 from osc_trino_acl_dsl.dsl2rules import dsl_to_rules
 
@@ -69,98 +72,168 @@ def rule_permissions(user: User, table: Table, rules: dict) -> tuple:
     return (allow, owner, privs)
 
 
-_table_admin_privs = ["SELECT", "INSERT", "DELETE", "OWNERSHIP"]
-_table_public_privs = ["SELECT"]
+_admin = ["SELECT", "INSERT", "DELETE", "OWNERSHIP"]
+_public = ["SELECT"]
 
 
 def test_dsl_minimal():
     # a minimal schema: declares one admin group, defaults public, and no other rules
-    dsl = {"admin": [{"group": "admins"}], "public": True, "catalogs": [], "schemas": [], "tables": []}
+    dsl = yaml.load(
+        textwrap.dedent(
+            """
+            admin:
+            - group: admins
+            public: true
+            catalogs: []
+            schemas: []
+            tables: []
+            """
+        ),
+        yaml.SafeLoader,
+    )
     rules = dsl_to_rules(dsl, validate=True)
 
     # test permissions of the admin group
-    allow, owner, privs = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
-    assert allow == "all"
-    assert owner is True
-    assert privs == _table_admin_privs
+    perms = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert perms == ("all", True, _admin)
 
     # test permissions of generic user
-    allow, owner, privs = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == _table_public_privs
+    perms = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert perms == ("read-only", False, _public)
 
 
 def test_dsl_catalog():
-    admin1 = {"group": "admins"}
-    cat1 = {"catalog": "dev", "public": False}
-    dsl = {"admin": [admin1], "public": True, "catalogs": [cat1], "schemas": [], "tables": []}
+    dsl = yaml.load(
+        textwrap.dedent(
+            """
+            admin:
+            - group: admins
+            public: true
+            catalogs:
+            - catalog: dev
+              public: false
+            schemas: []
+            tables: []
+            """
+        ),
+        yaml.SafeLoader,
+    )
     rules = dsl_to_rules(dsl, validate=True)
 
     # test permissions of the admin group
-    allow, owner, privs = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
-    assert allow == "all"
-    assert owner is True
-    assert privs == _table_admin_privs
+    perms = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert perms == ("all", True, _admin)
 
     # test permissions of generic user and non-dev catalog (global default)
-    allow, owner, privs = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == _table_public_privs
+    perms = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert perms == ("read-only", False, _public)
 
-    allow, owner, privs = rule_permissions(User("x", []), Table("dev", "x", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == []
+    perms = rule_permissions(User("x", []), Table("dev", "x", "x"), rules)
+    assert perms == ("read-only", False, [])
 
 
 def test_dsl_schema():
-    admin1 = {"group": "admins"}
-    devs = {"group": "devs"}
-    usery = {"user": "usery"}
-    cat1 = {"catalog": "dev", "public": False}
-    schema1 = {"catalog": "dev", "schema": "proj1", "admin": [devs, usery], "public": True}
-    dsl = {"admin": [admin1], "public": True, "catalogs": [cat1], "schemas": [schema1], "tables": []}
+    dsl = yaml.load(
+        textwrap.dedent(
+            """
+            admin:
+            - group: admins
+            public: true
+            catalogs:
+            - catalog: dev
+              public: false
+            schemas:
+            - catalog: dev
+              schema: proj1
+              admin:
+              - group: devs
+              - user: usery
+              public: true
+            tables: []
+            """
+        ),
+        yaml.SafeLoader,
+    )
     rules = dsl_to_rules(dsl, validate=True)
 
     # test permissions of the admin group
-    allow, owner, privs = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
-    assert allow == "all"
-    assert owner is True
-    assert privs == _table_admin_privs
+    perms = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert perms == ("all", True, _admin)
 
     # test permissions of generic user and non-dev catalog (global default)
-    allow, owner, privs = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == _table_public_privs
+    perms = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert perms == ("read-only", False, _public)
 
     # test permissions of the dev group on the dev catalog
-    allow, owner, privs = rule_permissions(User("x", "devs"), Table("dev", "x", "x"), rules)
-    assert allow == "all"
-    assert owner is False
-    assert privs == []
+    perms = rule_permissions(User("x", "devs"), Table("dev", "x", "x"), rules)
+    assert perms == ("all", False, [])
 
     # devs have admin in proj1 schema for all tables
-    allow, owner, privs = rule_permissions(User("x", "devs"), Table("dev", "proj1", "x"), rules)
-    assert allow == "all"
-    assert owner is True
-    assert privs == _table_admin_privs
+    perms = rule_permissions(User("x", "devs"), Table("dev", "proj1", "x"), rules)
+    assert perms == ("all", True, _admin)
 
-    allow, owner, privs = rule_permissions(User("usery", []), Table("dev", "proj1", "x"), rules)
-    assert allow == "all"
-    assert owner is True
-    assert privs == _table_admin_privs
+    perms = rule_permissions(User("usery", []), Table("dev", "proj1", "x"), rules)
+    assert perms == ("all", True, _admin)
 
     # dev-catalog default is non-public (no privs)
-    allow, owner, privs = rule_permissions(User("x", "nondev"), Table("dev", "x", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == []
+    perms = rule_permissions(User("x", "nondev"), Table("dev", "x", "x"), rules)
+    assert perms == ("read-only", False, [])
 
     # inside dev.proj1 schema tables default to public
-    allow, owner, privs = rule_permissions(User("x", []), Table("dev", "proj1", "x"), rules)
-    assert allow == "read-only"
-    assert owner is False
-    assert privs == _table_public_privs
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "x"), rules)
+    assert perms == ("read-only", False, _public)
+
+
+def test_dsl_table():
+    dsl = yaml.load(
+        textwrap.dedent(
+            """
+            admin:
+            - group: admins
+            public: true
+            catalogs:
+            - catalog: dev
+              public: false
+            schemas:
+            - catalog: dev
+              schema: proj1
+              admin:
+              - group: devs
+              - user: usery
+              public: true
+            tables:
+            - catalog: dev
+              schema: proj1
+              table: priv1
+              admin:
+              - group: devs
+              - user: userz
+              public: false
+            """
+        ),
+        yaml.SafeLoader,
+    )
+    rules = dsl_to_rules(dsl, validate=True)
+
+    # test permissions of the admin group
+    perms = rule_permissions(User("x", "admins"), Table("x", "x", "x"), rules)
+    assert perms == ("all", True, _admin)
+
+    # global default should be readable
+    perms = rule_permissions(User("x", []), Table("x", "x", "x"), rules)
+    assert perms == ("read-only", False, _public)
+
+    # dev catalog default should be non-public
+    perms = rule_permissions(User("x", []), Table("dev", "x", "x"), rules)
+    assert perms == ("read-only", False, [])
+
+    # dev.proj1 schema default should be readable
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "x"), rules)
+    assert perms == ("read-only", False, _public)
+
+    # dev.proj1.priv1 should default to non-public
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "priv1"), rules)
+    assert perms == ("read-only", False, [])
+
+    perms = rule_permissions(User("usery", []), Table("dev", "proj1", "priv1"), rules)
+    assert perms == ("all", True, _admin)
