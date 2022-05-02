@@ -234,7 +234,10 @@ def test_dsl_table():
     perms = rule_permissions(User("x", []), Table("dev", "proj1", "priv1"), rules)
     assert perms == ("read-only", False, [])
 
-    perms = rule_permissions(User("usery", []), Table("dev", "proj1", "priv1"), rules)
+    # "usery" and "devs" group have schema admin:
+    perms = rule_permissions(User("x", "devs"), Table("dev", "proj1", "x"), rules)
+    assert perms == ("all", True, _admin)
+    perms = rule_permissions(User("usery", []), Table("dev", "proj1", "x"), rules)
     assert perms == ("all", True, _admin)
 
     # userz added as table admin for priv1
