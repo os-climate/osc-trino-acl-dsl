@@ -317,7 +317,6 @@ def test_dsl_table_acl():
         perms = rule_permissions(User(u, []), Table("dev", "proj1", "priv1"), rules)
         assert perms == ("read-only", False, _public)
         r = first_matching_rule(User(u, []), Table("dev", "proj1", "priv1"), rules["tables"])
-        print(f"r = {r}\n")
         assert "filter" in r
         assert r["filter"] == "(country = 'london') and (year < 2061)"
         assert "columns" in r
