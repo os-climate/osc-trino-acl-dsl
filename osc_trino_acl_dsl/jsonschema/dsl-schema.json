@@ -8,8 +8,8 @@
     "description": "A DSL for generating rules.json files for Trino",
     "type": "object",
     "properties": {
-        "admin-groups": { "$ref": "#/definitions/group-array" },
-        "public-tables": { "type": "boolean" },
+        "admin": { "$ref": "#/definitions/user-group-array" },
+        "public": { "type": "boolean" },
         "catalogs": {
             "type": "array",
             "items": { "$ref": "#/definitions/catalog-entry" }
@@ -23,7 +23,7 @@
             "items": { "$ref": "#/definitions/table-entry" }
         }
     },
-    "required": ["admin-groups", "public-tables", "catalogs", "schemas", "tables"],
+    "required": ["admin", "public", "catalogs", "schemas", "tables"],
 
     "definitions": {
         "catalog-entry": {
@@ -31,10 +31,9 @@
             "type": "object",
             "properties": {
                 "catalog": { "$ref": "#/definitions/trino-id" },
-                "admin-groups": { "$ref": "#/definitions/group-array" },
-                "public-tables": { "type": "boolean" }
+                "public": { "type": "boolean" }
             },
-            "required": ["catalog", "admin-groups", "public-tables"]
+            "required": ["catalog", "public"]
         },
         "schema-entry": {
             "description": "an entry decribing the policy for a database schema",
@@ -42,10 +41,10 @@
             "properties": {
                 "catalog": { "$ref": "#/definitions/trino-id" },
                 "schema": { "$ref": "#/definitions/trino-id" },
-                "admin-groups": { "$ref": "#/definitions/group-array" },
-                "public-tables": { "type": "boolean" }
+                "admin": { "$ref": "#/definitions/user-group-array" },
+                "public": { "type": "boolean" }
             },
-            "required": ["catalog", "schema", "admin-groups", "public-tables"]
+            "required": ["catalog", "schema", "admin", "public"]
         },
         "table-entry": {
             "description": "an entry decribing the policy for a table",
@@ -54,45 +53,65 @@
                 "catalog": { "$ref": "#/definitions/trino-id" },
                 "schema": { "$ref": "#/definitions/trino-id" },
                 "table": { "$ref": "#/definitions/trino-id" },
-                "admin-groups": { "$ref": "#/definitions/group-array" },
-                "public": { "type": "boolean" },
-                "column-acl": {
-                    "type": "array",
-                    "items": { "$ref": "#/definitions/hide-column-entry" },
+                "admin": { "$ref": "#/definitions/user-group-array" },
+                "public": { "oneOf": [
+                    { "type": "boolean" },
+                    { "type": "object",
+                        "properties": {
+                            "filter": { "$ref": "#/definitions/filter-array" },
+                            "hide": { "$ref": "#/definitions/hide-array" }
+                        }
+                    }
+                ] },
+                "acl": { "type": "array",
+                    "items": { "type": "object",
+                        "properties": {
+                            "id": { "$ref": "#/definitions/user-group-array" },
+                            "filter": { "$ref": "#/definitions/filter-array" },
+                            "hide": { "$ref": "#/definitions/hide-array" }
+                        },
+                        "required": ["id"],
+                        "minProperties": 2
+                    },
                     "minItems": 1
-                },
-                "row-acl": { "anyOf": [
-                    { "$ref": "#/definitions/row-acl-filter" }
-                ]}
-            },
-            "required": ["catalog", "schema", "table", "admin-groups", "public"]
-        },
-        "group-array": {
-            "description": "an array of group patterns",
-            "type": "array",
-            "items": { "$ref": "#/definitions/trino-id-regex" },
-            "minItems": 1
-        },
-        "hide-column-entry": {
-            "description": "an entry in the cumulative column-hiding array for column-level ACL",
-            "type": "object",
-            "properties": {
-                "groups": { "$ref": "#/definitions/group-array" },
-                "hide-columns": {
-                    "type": "array",
-                    "items": { "$ref": "#/definitions/trino-id" }
                 }
             },
-            "required": ["hide-columns"]
+            "required": ["catalog", "schema", "table", "public"]
         },
-        "row-acl-filter": {
-            "description": "A row ACL spec that specifies a raw SQL filter clause",
+        "filter-array": {
+            "description": "describes row filtering access controls",
+            "type": "array",
+            "items": { "$ref": "#/definitions/trino-sql-clause" }
+        },
+        "hide-array": {
+            "description": "array of column names to hide",
+            "type": "array",
+            "items": { "$ref": "#/definitions/trino-id" }
+        },
+        "user-group-array": {
+            "description": "an array of user or group patterns",
+            "type": "array",
+            "items": { "oneOf": [
+                { "$ref": "#/definitions/trino-user" },
+                { "$ref": "#/definitions/trino-group" }
+            ] },
+            "minItems": 1
+        },
+        "trino-group": {
+            "description": "Specifies a trino group name or regex",
             "type": "object",
             "properties": {
-                "type": { "const": "filter" },
-                "filter": { "$ref": "#/definitions/trino-sql-clause" }
+                "group": { "$ref": "#/definitions/trino-id-regex" }
             },
-            "required": ["type", "filter"]
+            "required": ["group"]
+        },
+        "trino-user": {
+            "description": "Specifies a trino user name or regex",
+            "type": "object",
+            "properties": {
+                "user": { "$ref": "#/definitions/trino-id-regex" }
+            },
+            "required": ["user"]
         },
         "trino-sql-clause": {
             "description": "Contains a Trino SQL clause (e.g. the argument to WHERE <clause>). TODO: it would be nice to check this for correct syntax but I am dubious it is feasible",

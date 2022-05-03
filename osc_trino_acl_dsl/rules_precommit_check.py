@@ -1,15 +1,12 @@
-import sys
-import os
-import json
 import argparse
-import re
+import json
+import os
+import sys
 
 import yaml  # via pyyaml module
 
-import jsonschema
-
-from .dsl2rules import dsl_to_rules
 from .__init__ import __version__
+from .dsl2rules import dsl_to_rules
 
 _out_of_sync_message = """
 {prog}: {jsonfile} out of sync with {dslfile}
@@ -36,32 +33,31 @@ in your .pre-commit-config.yaml, so this check ignores any unmanaged rules.json 
 see: https://pre-commit.com/#config-exclude
 """
 
+
 def check_dsl_rules_consistency(dslpath, rulespath, prog):
     try:
-        with open(dslpath, 'r') as dsl_file:
+        with open(dslpath, "r") as dsl_file:
             dsl = yaml.safe_load(dsl_file)
-        with open(rulespath, 'r') as json_file:
+        with open(rulespath, "r") as json_file:
             jsonrules = json.load(json_file)
-        dslrules = dsl_to_rules(dsl, validate = True)
+        dslrules = dsl_to_rules(dsl, validate=True)
         if not (jsonrules == dslrules):
-            print(_out_of_sync_message.format(
-                prog = prog,
-                jsonfile = rulespath,
-                dslfile = dslpath,
-                version = __version__))
+            print(_out_of_sync_message.format(prog=prog, jsonfile=rulespath, dslfile=dslpath, version=__version__))
             sys.exit(1)
     except Exception as e:
         # any exception is a test failure
         print(f"{prog}: commit check failed with exception {type(e)}:\n{e}")
         sys.exit(1)
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('paths', metavar='CHECK_FILES', nargs='*',
-        help='files to check, normally files staged for git commit')
+    parser.add_argument(
+        "paths", metavar="CHECK_FILES", nargs="*", help="files to check, normally files staged for git commit"
+    )
 
     # parse command line args
-    args = parser.parse_args(sys.argv[1:]) # argv[0] is command
+    args = parser.parse_args(sys.argv[1:])  # argv[0] is command
 
     # I am assuming the `files` attribute in .pre-commit-hooks.yaml
     # (or override in  .pre-commit-config.yaml) is properly set to
@@ -79,12 +75,8 @@ def main():
     # and each matches exactly one pair in your repo
 
     # useful diagnostic, in the event of a check failure
-    print("{prog}: staged DSL files:\n{flist}\n".format(
-        prog = parser.prog,
-        flist = "\n".join(dsl_yaml)))
-    print("{prog}: staged rule files:\n{flist}\n".format(
-        prog = parser.prog,
-        flist = "\n".join(unchecked_rules_json)))
+    print("{prog}: staged DSL files:\n{flist}\n".format(prog=parser.prog, flist="\n".join(dsl_yaml)))
+    print("{prog}: staged rule files:\n{flist}\n".format(prog=parser.prog, flist="\n".join(unchecked_rules_json)))
 
     for dslpath in dsl_yaml:
         print(f"{parser.prog}: checking {dslpath}")
@@ -131,15 +123,17 @@ def main():
 
     if len(unchecked_rules_json) > 0:
         # any remaining rules files are a potential error so fail the check
-        print(_unchecked_rules_message.format(
-            prog = parser.prog,
-            flist = "\n".join(unchecked_rules_json),
-            version = __version__))
+        print(
+            _unchecked_rules_message.format(
+                prog=parser.prog, flist="\n".join(unchecked_rules_json), version=__version__
+            )
+        )
         sys.exit(1)
 
     # all checks passed for any matching files, exit with 'success'
     print(f"{parser.prog}: all files passed")
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
