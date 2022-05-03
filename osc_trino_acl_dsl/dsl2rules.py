@@ -161,23 +161,24 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         # table default policy goes last
         # spec['public'] can be either boolean or an object, and it
         # registers as True if it is an object or boolean value True
-        pub = spec["public"]
-        rule = _union(cst, {"privileges": _table_public_privs if pub else []})
-        if type(pub) == dict:
+        public = spec["public"]
+        pub = ((type(public) == bool) and public) or (type(public) == dict)
+        rule = _union(cst, {"privileges": (_table_public_privs if pub else [])})
+        if type(public) == dict:
             # if 'public' was specified as an object with settings, then
             # include these in the union of all hidden columns and filters
-            if "hide" in pub:
-                uhide.update(set(pub["hide"]))
-            if "filter" in pub:
-                ufilter.update(set(pub["filter"]))
+            if "hide" in public:
+                uhide.update(set(public["hide"]))
+            if "filter" in public:
+                ufilter.update(set(public["filter"]))
         if pub:
             # if table is set to general public access, then include
             # all hidden columns and row filters in the acl list, so that
             # public cannot see anything hidden by any other row/col ACL rule
             if len(uhide) > 0:
-                rule.update({"columns": [{"name": col, "allow": False} for col in uhide]})
+                rule.update({"columns": [{"name": col, "allow": False} for col in sorted(list(uhide))]})
             if len(ufilter) > 0:
-                rule.update({"filter": " and ".join([f"({f})" for f in ufilter])})
+                rule.update({"filter": " and ".join([f"({f})" for f in sorted(list(ufilter))])})
         table_rules.append(rule)
 
     # default schema rules for tables are lower priority than specific table rules

@@ -270,7 +270,11 @@ def test_dsl_table_acl():
             - catalog: dev
               schema: proj1
               table: priv1
-              public: false
+              public:
+                filter:
+                - "population < 1000"
+                hide:
+                - column3
               acl:
               - id:
                 - user: usera
@@ -303,10 +307,6 @@ def test_dsl_table_acl():
     perms = rule_permissions(User("x", []), Table("dev", "proj1", "x"), rules)
     assert perms == ("read-only", False, _public)
 
-    # dev.proj1.priv1 should default to non-public
-    perms = rule_permissions(User("x", []), Table("dev", "proj1", "priv1"), rules)
-    assert perms == ("read-only", False, [])
-
     # "usery" and "devs" group have schema admin:
     perms = rule_permissions(User("x", "devs"), Table("dev", "proj1", "x"), rules)
     assert perms == ("all", True, _admin)
@@ -321,3 +321,17 @@ def test_dsl_table_acl():
         assert r["filter"] == "(country = 'london') and (year < 2061)"
         assert "columns" in r
         assert r["columns"] == [{"name": "column1", "allow": False}, {"name": "column2", "allow": False}]
+
+    # dev.proj1.priv1 should default to public
+    # but with additional row and column acl settings
+    perms = rule_permissions(User("x", []), Table("dev", "proj1", "priv1"), rules)
+    assert perms == ("read-only", False, _public)
+    r = first_matching_rule(User("x", []), Table("dev", "proj1", "priv1"), rules["tables"])
+    assert "filter" in r
+    assert r["filter"] == "(country = 'london') and (population < 1000) and (year < 2061)"
+    assert "columns" in r
+    assert r["columns"] == [
+        {"name": "column1", "allow": False},
+        {"name": "column2", "allow": False},
+        {"name": "column3", "allow": False},
+    ]
