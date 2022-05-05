@@ -5,7 +5,7 @@ import sys
 
 import yaml  # via pyyaml module
 
-from .__init__ import __version__
+from .__about__ import __version__
 from .dsl2rules import dsl_to_rules
 
 _out_of_sync_message = """
