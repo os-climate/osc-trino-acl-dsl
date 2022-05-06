@@ -193,10 +193,10 @@ def dsl_to_rules(dsl: dict, validate=True) -> dict:  # noqa: C901
         # configure group(s) with read+write access to this catalog
         # I have concerns about how using "|" style regex is going to scale if number
         # of schemas and tables grows large, so I am going to encode these as individual rules
-        ugs = list(set([e["group"] for e in uallow.get(spec["catalog"], []) if "group" in e]))
+        ugs = sorted(list(set([e["group"] for e in uallow.get(spec["catalog"], []) if "group" in e])))
         for ug in ugs:
             catalog_rules.append(_union({"group": ug}, rule))
-        ugs = list(set([e["user"] for e in uallow.get(spec["catalog"], []) if "user" in e]))
+        ugs = sorted(list(set([e["user"] for e in uallow.get(spec["catalog"], []) if "user" in e])))
         for ug in ugs:
             catalog_rules.append(_union({"user": ug}, rule))
 
