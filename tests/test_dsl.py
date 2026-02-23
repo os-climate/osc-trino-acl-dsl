@@ -79,16 +79,14 @@ _public = ["SELECT"]
 def test_dsl_minimal():
     # a minimal schema: declares one admin group, defaults public, and no other rules
     dsl = yaml.load(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             admin:
             - group: admins
             public: true
             catalogs: []
             schemas: []
             tables: []
-            """
-        ),
+            """),
         yaml.SafeLoader,
     )
     rules = dsl_to_rules(dsl, validate=True)
@@ -104,8 +102,7 @@ def test_dsl_minimal():
 
 def test_dsl_catalog():
     dsl = yaml.load(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             admin:
             - group: admins
             public: true
@@ -114,8 +111,7 @@ def test_dsl_catalog():
               public: false
             schemas: []
             tables: []
-            """
-        ),
+            """),
         yaml.SafeLoader,
     )
     rules = dsl_to_rules(dsl, validate=True)
@@ -134,8 +130,7 @@ def test_dsl_catalog():
 
 def test_dsl_schema():
     dsl = yaml.load(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             admin:
             - group: admins
             public: true
@@ -150,8 +145,7 @@ def test_dsl_schema():
               - user: usery
               public: true
             tables: []
-            """
-        ),
+            """),
         yaml.SafeLoader,
     )
     rules = dsl_to_rules(dsl, validate=True)
@@ -186,8 +180,7 @@ def test_dsl_schema():
 
 def test_dsl_table():
     dsl = yaml.load(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             admin:
             - group: admins
             public: true
@@ -208,8 +201,7 @@ def test_dsl_table():
               admin:
               - user: userz
               public: false
-            """
-        ),
+            """),
         yaml.SafeLoader,
     )
     rules = dsl_to_rules(dsl, validate=True)
@@ -251,8 +243,7 @@ def test_dsl_table():
 
 def test_dsl_table_acl():
     dsl = yaml.load(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             admin:
             - group: admins
             public: true
@@ -285,8 +276,7 @@ def test_dsl_table_acl():
                 hide:
                 - column1
                 - column2
-            """
-        ),
+            """),
         yaml.SafeLoader,
     )
     rules = dsl_to_rules(dsl, validate=True)
